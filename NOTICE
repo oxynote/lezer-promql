@@ -120,16 +120,25 @@ We also use code from a large number of npm packages. For details, see:
 
 ---
 
-@oxynote/lezer-promql is a modified copy of the lezer-promql module from
+@oxynote/lezer-promql
+Modifications Copyright 2026 Oxynote
+
+This package is a modified copy of the lezer-promql module from
 https://github.com/prometheus/prometheus/tree/main/web/ui/module/lezer-promql
-distributed under the Apache License, Version 2.0.
+distributed under the Apache License, Version 2.0. Everything not listed
+below is upstream's, under The Prometheus Authors' copyright above.
 
 Changes from upstream:
 
   - src/promql.grammar: added the DynamicDurationPlaceholder token and
     accepted it as a number, so Grafana-style placeholders ($__interval,
     $__range, $__rate_interval) parse as durations.
+  - test/expression.txt: parse cases for those placeholders.
   - jest.config.cjs: dropped the ts-jest preset, which upstream resolves
     through the prometheus web/ui workspace.
-  - package.json: renamed the package and pointed it at this repository.
+  - package.json: renamed the package, pinned the package manager, and
+    pointed the metadata at this repository.
+  - .gitignore: stopped ignoring LICENSE, which is redistributed here.
+  - README.md: describes the fork; SYNCING.md, scripts/ and .github/ are
+    additions and contain no upstream code.
 
