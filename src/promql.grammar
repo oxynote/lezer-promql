@@ -334,9 +334,15 @@ durationPrimary[@inline] {
   whitespace { std.whitespace+ }
   LineComment { "#" ![\n]* }
 
+  // Grafana-style duration placeholders such as $__interval, $__range and
+  // $__rate_interval, which a dashboard substitutes before the query runs.
+  // Accepted wherever a duration is, so an editor does not mark a valid
+  // templated query as broken.
+  DynamicDurationPlaceholder { "$__" $[a-zA-Z_]+ }
+
   number {
       (std.digit+ (("_")? std.digit)* ("." std.digit+ (("_")? std.digit)*)? | "." std.digit+ (("_")? std.digit)*) (("e" | "E") ("+" | "-")? std.digit+ (("_")? std.digit)*)? |
-      "0x" (std.digit | $[a-fA-F])+ | duration
+      "0x" (std.digit | $[a-fA-F])+ | duration | DynamicDurationPlaceholder
   }
   StringLiteral { // TODO: This is for JS, make this work for PromQL.
     '"' (![\\\n"] | "\\" _)* '"'? |

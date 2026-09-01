@@ -904,3 +904,43 @@ PromQL(
     VectorSelector(Identifier)
   )
 )
+
+# Dynamic duration placeholder
+
+$__interval
+
+==>
+
+PromQL(NumberDurationLiteral)
+
+# Dynamic duration placeholder as a range
+
+rate(foo[$__interval])
+
+==>
+
+PromQL(FunctionCall(FunctionIdentifier(Rate),FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))))
+
+# Dynamic duration placeholder with underscores in its name
+
+rate(foo[$__rate_interval])
+
+==>
+
+PromQL(FunctionCall(FunctionIdentifier(Rate),FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))))
+
+# Dynamic duration placeholder as an offset
+
+foo offset $__range
+
+==>
+
+PromQL(OffsetExpr(VectorSelector(Identifier),Offset,OffsetDurationExpr(NumberDurationLiteralInDurationContext)))
+
+# Dynamic duration placeholder without a name
+
+$__
+
+==>
+
+PromQL(⚠,VectorSelector(Identifier))
