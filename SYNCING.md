@@ -41,5 +41,8 @@ git checkout main && git merge upstream
   the placeholder cases at the end of `test/expression.txt` are this fork's.
 - Bump `version` in `package.json` to the new upstream version with the
   `-oxynote.N` suffix reset to 1, then tag `vX.Y.Z-oxynote.N` to publish.
+  The tag is checked against the manifest before anything is published, and
+  npm authenticates the workflow by its own identity — there is no token to
+  rotate.
 - `@prometheus-io/codemirror-promql` is released from the same monorepo at the
   same version number. Consumers should move both together.

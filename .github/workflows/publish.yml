@@ -27,8 +27,9 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      # provenance is attested through the workflow's own identity, so no
-      # token beyond npm's is needed to sign the publish.
+      # npm authenticates this job by its own workflow identity — trusted
+      # publishing — so there is no token to store, and the same identity
+      # signs the provenance attestation.
       id-token: write
     steps:
       - name: Check out the code
@@ -63,7 +64,10 @@ jobs:
             exit 1
           fi
 
+      # published with npm rather than pnpm: trusted publishing is an npm
+      # CLI feature, and the runner's bundled version is not guaranteed to
+      # be new enough to have it.
       - name: Publishing
-        run: pnpm publish --access public --no-git-checks --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm install -g npm@latest
+          npm publish --access public --provenance
