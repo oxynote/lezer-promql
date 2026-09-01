@@ -14,6 +14,11 @@ repository carries that directory on its own branch:
 A sync is therefore a merge, and a conflict means upstream touched a line
 this fork changed — which is exactly when someone should look.
 
+`NOTICE` is the one file that conflicts by design: the `upstream` branch
+carries prometheus's whole root notice, and `main` keeps only the part that
+pertains to this package. Resolve it by keeping `main`'s version and folding
+in anything upstream added that this package actually ships.
+
 ## Automatic
 
 [`.github/workflows/sync.yml`](.github/workflows/sync.yml) runs weekly and on

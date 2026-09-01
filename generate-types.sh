@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Copyright 2021 The Prometheus Authors
+# Modifications Copyright 2026 Oxynote
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +25,7 @@ fi
 
 cat <<EOF >> ${indexFile}
 // Copyright 2021 The Prometheus Authors
+// Modifications Copyright 2026 Oxynote
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

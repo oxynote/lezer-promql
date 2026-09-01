@@ -19,8 +19,9 @@ grammar coming from [Prometheus](https://github.com/prometheus/prometheus/blob/m
 written in yacc.
 
 This library is stable but doesn't provide any guideline of how to use it as it has been integrated
-into [codemirror-promql](https://github.com/prometheus/prometheus/blob/main/web/ui/module/codemirror-promql). If you
-want to use this library, you perhaps want to actually use **@prometheus-io/codemirror-promql** instead.
+into [codemirror-promql](https://github.com/prometheus/prometheus/blob/main/web/ui/module/codemirror-promql). Reach for
+**@prometheus-io/codemirror-promql** rather than this package directly — it parses through whichever grammar resolves
+under the `@prometheus-io/lezer-promql` specifier, which is what the override below redirects here.
 
 **Note**: This library is a lezer-based implementation of the [authoritative, goyacc-based PromQL grammar](https://github.com/prometheus/prometheus/blob/main/promql/parser/generated_parser.y). 
 Any changes to the authoritative grammar need to be reflected in this package as well.
