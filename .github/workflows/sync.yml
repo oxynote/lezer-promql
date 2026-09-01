@@ -1,0 +1,94 @@
+name: Sync
+
+# tracks prometheus's copy of this module. The upstream branch is that
+# directory at a release tag and nothing else, so a sync is a merge into
+# main and a conflict means upstream touched a line this fork changed.
+on:
+  schedule:
+    # weekly is enough: the grammar changes a few times a year, and the
+    # merge is only urgent when a consumer wants a newer prometheus.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "prometheus tag to sync to (default: the newest release)"
+        required: false
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sync:
+    name: Syncing the upstream branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+        with:
+          ref: upstream
+          # the pull request is opened against main, so its history has to
+          # be here too.
+          fetch-depth: 0
+
+      # sorted as text, v3.9.1 comes after v3.14.0 — the newest tag is only
+      # the newest under a version sort.
+      - name: Resolve the tag
+        id: tag
+        run: |
+          tag="${{ inputs.tag }}"
+          if [[ -z "$tag" ]]; then
+            tag="$(git ls-remote --tags --refs \
+              https://github.com/prometheus/prometheus.git 'v*' \
+              | sed 's|.*refs/tags/||' | grep -v -- '-rc' | sort -V | tail -1)"
+          fi
+          echo "value=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Syncing the module
+        id: sync
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          before="$(git rev-parse HEAD)"
+          ./scripts/sync-upstream.sh "${{ steps.tag.outputs.value }}"
+          after="$(git rev-parse HEAD)"
+          if [[ "$before" == "$after" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pushing the upstream branch
+        if: steps.sync.outputs.changed == 'true'
+        run: git push origin upstream
+
+      # a long-lived pull request: reopened on the next sync if this one is
+      # still unmerged, so the branch never accumulates syncs in silence.
+      - name: Opening the merge into main
+        if: steps.sync.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          if gh pr view upstream --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            gh pr comment upstream --body "Synced to \`$TAG\`."
+            exit 0
+          fi
+          printf '%s\n' \
+            "The upstream branch now carries prometheus's \`web/ui/module/lezer-promql\` at \`$TAG\`." \
+            "" \
+            "Merging brings it into this fork. A conflict here means upstream touched a line the fork changed — \`NOTICE\` lists those. After merging, bump \`version\` in \`package.json\` to the new upstream version and tag it to publish." \
+            > /tmp/pr-body.md
+          gh pr create \
+            --base main \
+            --head upstream \
+            --title "sync: prometheus $TAG" \
+            --body-file /tmp/pr-body.md

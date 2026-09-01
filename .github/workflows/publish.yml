@@ -1,0 +1,69 @@
+name: Publish
+
+# publishes the package for a tag, and only once the parse tests pass. Tags
+# carry the upstream version and this fork's counter: v0.314.0-oxynote.1
+# publishes @oxynote/lezer-promql@0.314.0-oxynote.1.
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  qa:
+    uses: ./.github/workflows/qa.yml
+
+  publish:
+    name: Publishing to npm
+    needs: qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      # provenance is attested through the workflow's own identity, so no
+      # token beyond npm's is needed to sign the publish.
+      id-token: write
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Installing dependencies
+        run: pnpm install --frozen-lockfile
+
+      # dist/ is gitignored, so the artifact being published is built here
+      # rather than taken from the checkout.
+      - name: Building the parser
+        run: pnpm run build
+
+      # the tag is the source of truth; a mismatch means the version bump
+      # was forgotten, which would publish the previous version's contents.
+      - name: Checking the tag against the manifest
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          manifest="$(node -p "require('./package.json').version")"
+          if [[ "$tag" != "$manifest" ]]; then
+            echo "tag $tag does not match package.json $manifest" >&2
+            exit 1
+          fi
+
+      - name: Publishing
+        run: pnpm publish --access public --no-git-checks --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,46 @@
+name: QA
+
+on:
+  push:
+    branches:
+      - main
+      - upstream
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Building the grammar and running the parse tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Installing dependencies
+        run: pnpm install --frozen-lockfile
+
+      # the parser is generated from the grammar, so the tests only mean
+      # something against a fresh build.
+      - name: Building the parser
+        run: pnpm run build
+
+      - name: Running the parse tests
+        run: pnpm test
