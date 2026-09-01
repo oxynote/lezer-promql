@@ -67,7 +67,10 @@ jobs:
       # published with npm rather than pnpm: trusted publishing is an npm
       # CLI feature, and the runner's bundled version is not guaranteed to
       # be new enough to have it.
+      # --tag is not optional here: every version this fork publishes is a
+      # prerelease (0.314.0-oxynote.1), and npm refuses to guess whether one
+      # should become the default install.
       - name: Publishing
         run: |
           npm install -g npm@latest
-          npm publish --access public --provenance
+          npm publish --access public --provenance --tag latest

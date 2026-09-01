@@ -48,6 +48,7 @@ git checkout main && git merge upstream
   `-oxynote.N` suffix reset to 1, then tag `vX.Y.Z-oxynote.N` to publish.
   The tag is checked against the manifest before anything is published, and
   npm authenticates the workflow by its own identity — there is no token to
-  rotate.
+  rotate. Every version here is a prerelease, so the publish names its
+  dist-tag explicitly; `latest` is what a plain install should resolve to.
 - `@prometheus-io/codemirror-promql` is released from the same monorepo at the
   same version number. Consumers should move both together.
