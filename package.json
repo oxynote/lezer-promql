@@ -1,7 +1,7 @@
 {
-  "name": "@prometheus-io/lezer-promql",
-  "version": "0.314.0",
-  "description": "lezer-based PromQL grammar",
+  "name": "@oxynote/lezer-promql",
+  "version": "0.314.0-oxynote.1",
+  "description": "lezer-based PromQL grammar, forked to parse Grafana-style duration placeholders",
   "main": "dist/index.cjs",
   "type": "module",
   "exports": {
@@ -11,20 +11,25 @@
   },
   "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
-  "author": "Prometheus Authors <prometheus-developers@googlegroups.com>",
+  "author": "Oxynote",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/prometheus/prometheus.git"
+    "url": "git+https://github.com/oxynote/lezer-promql.git"
   },
+  "files": [
+    "dist",
+    "src",
+    "NOTICE"
+  ],
   "keywords": [
     "lezer",
     "promql"
   ],
   "bugs": {
-    "url": "https://github.com/prometheus/prometheus/issues"
+    "url": "https://github.com/oxynote/lezer-promql/issues"
   },
-  "homepage": "https://github.com/prometheus/prometheus/blob/main/web/ui/module/lezer-promql/README.md",
+  "homepage": "https://github.com/oxynote/lezer-promql#readme",
   "scripts": {
     "build": "bash ./build.sh",
     "lint": "echo 'nothing to do'",

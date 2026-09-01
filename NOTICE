@@ -117,3 +117,19 @@ We also use code from a large number of npm packages. For details, see:
 - The licenses of the packages bundled into the old (react-app) web UI, served
   via --enable-feature=old-ui, are extracted at build time into a
   *.LICENSE.txt file that is embedded alongside the old UI's JavaScript bundle.
+
+---
+
+@oxynote/lezer-promql is a modified copy of the lezer-promql module from
+https://github.com/prometheus/prometheus/tree/main/web/ui/module/lezer-promql
+distributed under the Apache License, Version 2.0.
+
+Changes from upstream:
+
+  - src/promql.grammar: added the DynamicDurationPlaceholder token and
+    accepted it as a number, so Grafana-style placeholders ($__interval,
+    $__range, $__rate_interval) parse as durations.
+  - jest.config.cjs: dropped the ts-jest preset, which upstream resolves
+    through the prometheus web/ui workspace.
+  - package.json: renamed the package and pointed it at this repository.
+
