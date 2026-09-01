@@ -34,7 +34,7 @@ tests against the merge.
 TAG=$(git ls-remote --tags --refs https://github.com/prometheus/prometheus.git 'v*' \
   | sed 's|.*refs/tags/||' | grep -v -- '-rc' | sort -V | tail -1)
 
-./scripts/sync-upstream.sh "$TAG"   # commits to the upstream branch
+./sync-upstream.sh "$TAG"   # commits to the upstream branch
 git checkout main && git merge upstream
 ```
 

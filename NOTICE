@@ -36,6 +36,6 @@ Changes from upstream:
   - package.json: renamed the package, pinned the package manager, and
     pointed the metadata at this repository.
   - .gitignore: stopped ignoring LICENSE, which is redistributed here.
-  - README.md: describes the fork; SYNCING.md, scripts/ and .github/ are
-    additions and contain no upstream code.
+  - README.md: describes the fork; SYNCING.md, sync-upstream.sh and
+    .github/ are additions and contain no upstream code.
 

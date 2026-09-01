@@ -58,7 +58,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           before="$(git rev-parse HEAD)"
-          ./scripts/sync-upstream.sh "${{ steps.tag.outputs.value }}"
+          ./sync-upstream.sh "${{ steps.tag.outputs.value }}"
           after="$(git rev-parse HEAD)"
           if [[ "$before" == "$after" ]]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"

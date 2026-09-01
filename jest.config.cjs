@@ -1,4 +1,4 @@
-// Modifications Copyright 2026 Oxynote.
+// Modifications Copyright 2026 Oxynote
 //
 // upstream runs this suite from the prometheus web/ui workspace, where
 // ts-jest is hoisted into scope. Standalone there is no typescript to
