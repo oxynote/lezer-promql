@@ -1,0 +1,7 @@
+# neither package is used by the grammar build or its tests: @parcel/watcher
+# is jest's optional file watcher and unrs-resolver rollup's optional native
+# resolver. Denied rather than left unanswered, which pnpm treats as an
+# error.
+allowBuilds:
+  "@parcel/watcher": false
+  unrs-resolver: false

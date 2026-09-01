@@ -1,11 +1,8 @@
-/** @type {import('ts-jest/dist/types').InitialOptionsTsJest} */
+// upstream runs this suite from the prometheus web/ui workspace, where
+// ts-jest is hoisted into scope. Standalone there is no typescript to
+// transform — the one suite is plain ESM javascript — so the preset is
+// dropped rather than the toolchain pulled in to satisfy it.
+/** @type {import('jest').Config} */
 module.exports = {
-    preset: 'ts-jest',
-    extensionsToTreatAsEsm: ['.ts'],
     testEnvironment: 'node',
-    globals: {
-        'ts-jest': {
-            useESM: true,
-        },
-    },
 };
