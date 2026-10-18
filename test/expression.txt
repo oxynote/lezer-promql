@@ -944,3 +944,107 @@ $__
 ==>
 
 PromQL(⚠,VectorSelector(Identifier))
+
+# Variable reference as a number
+
+foo > $threshold
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Gtr,NumberDurationLiteral(VariableReference)))
+
+# Variable reference as a range
+
+rate(foo[$window])
+
+==>
+
+PromQL(FunctionCall(FunctionIdentifier(Rate),FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext(VariableReference))))))
+
+# Variable reference as a subquery range and step
+
+foo[$range_2:$step]
+
+==>
+
+PromQL(SubqueryExpr(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext(VariableReference)),DurationExpr(NumberDurationLiteralInDurationContext(VariableReference))))
+
+# Variable reference as an offset
+
+foo offset $shift
+
+==>
+
+PromQL(OffsetExpr(VectorSelector(Identifier),Offset,OffsetDurationExpr(NumberDurationLiteralInDurationContext(VariableReference))))
+
+# Variable reference as an @ timestamp
+
+foo @ $at
+
+==>
+
+PromQL(StepInvariantExpr(VectorSelector(Identifier),At,NumberDurationLiteral(VariableReference)))
+
+# Variable reference as a function argument
+
+topk($count, foo)
+
+==>
+
+PromQL(AggregateExpr(AggregateOp(Topk),FunctionCallBody(NumberDurationLiteral(VariableReference),VectorSelector(Identifier))))
+
+# Variable reference as a metric name
+
+$metric{job="api"}
+
+==>
+
+PromQL(VectorSelector(VariableReference,LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral))))
+
+# Variable reference as a matcher's label name
+
+foo{$label="api"}
+
+==>
+
+PromQL(VectorSelector(Identifier,LabelMatchers(UnquotedLabelMatcher(VariableReference,MatchOp(EqlSingle),StringLiteral))))
+
+# Variable reference as a grouping label
+
+sum by ($label, job) (foo)
+
+==>
+
+PromQL(AggregateExpr(AggregateOp(Sum),AggregateModifier(By,GroupingLabels(VariableReference,LabelName)),FunctionCallBody(VectorSelector(Identifier))))
+
+# Variable reference inside a label value
+
+foo{env="$env"}
+
+==>
+
+PromQL(VectorSelector(Identifier,LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral))))
+
+# Variable reference in place of a function name
+
+$fn(foo)
+
+==>
+
+PromQL(NumberDurationLiteral(VariableReference,⚠,⚠(Identifier)),⚠)
+
+# Variable reference in place of an operator
+
+foo $op bar
+
+==>
+
+PromQL(VectorSelector(Identifier,⚠(VariableReference),⚠(Identifier)))
+
+# Variable reference with an uppercase letter
+
+$Env
+
+==>
+
+PromQL(⚠,VectorSelector(Identifier))

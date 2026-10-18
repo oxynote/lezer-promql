@@ -5,3 +5,4 @@ src/parser.js
 src/parser.terms.js
 
 CHANGELOG.md
+.DS_Store

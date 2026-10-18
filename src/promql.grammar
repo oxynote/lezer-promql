@@ -131,7 +131,7 @@ binModifiers {
 }
 
 GroupingLabels {
-  "(" ((LabelName | QuotedLabelName) ("," (LabelName | QuotedLabelName))* ","?)? ")"
+  "(" ((LabelName | QuotedLabelName | VariableReference) ("," (LabelName | QuotedLabelName | VariableReference))* ","?)? ")"
 }
 
 FunctionCall {
@@ -260,7 +260,7 @@ UnaryOp {
 }
 
 VectorSelector {
-  Identifier LabelMatchers |
+  (Identifier | VariableReference) LabelMatchers |
   Identifier |
   LabelMatchers
 }
@@ -277,7 +277,7 @@ MatchOp {
 }
 
 UnquotedLabelMatcher {
-    LabelName MatchOp StringLiteral
+    (LabelName | VariableReference) MatchOp StringLiteral
 }
 
 QuotedLabelMatcher {
@@ -297,11 +297,11 @@ AtModifierPreprocessors {
 }
 
 NumberDurationLiteral  {
- ("-"|"+")?~signed (number | inf | nan)
+ ("-"|"+")?~signed (number | inf | nan | VariableReference)
 }
 
 NumberDurationLiteralInDurationContext {
-  number | inf | nan
+  number | inf | nan | VariableReference
 }
 
 DurationExpr {
@@ -340,6 +340,11 @@ durationPrimary[@inline] {
   // Accepted wherever a duration is, so an editor does not mark a valid
   // templated query as broken.
   DynamicDurationPlaceholder { "$__" $[a-zA-Z_]+ }
+
+  // A $key that names a variable, which the host substitutes as raw text
+  // before the query runs. Accepted where a value, a label name or a
+  // metric name goes, never in place of a keyword or an operator.
+  VariableReference { "$" $[a-z] $[a-z0-9_]* }
 
   number {
       (std.digit+ (("_")? std.digit)* ("." std.digit+ (("_")? std.digit)*)? | "." std.digit+ (("_")? std.digit)*) (("e" | "E") ("+" | "-")? std.digit+ (("_")? std.digit)*)? |

@@ -2,9 +2,11 @@
 
 > A fork of Prometheus's
 > [lezer-promql](https://github.com/prometheus/prometheus/tree/main/web/ui/module/lezer-promql),
-> published as `@oxynote/lezer-promql`. It adds one thing: Grafana-style
-> duration placeholders (`$__interval`, `$__range`, `$__rate_interval`) parse
-> as durations, so an editor does not mark a templated query as broken.
+> published as `@oxynote/lezer-promql`. It adds two things, so an editor
+> does not mark a templated query as broken: Grafana-style duration
+> placeholders (`$__interval`, `$__range`, `$__rate_interval`) parse as
+> durations, and variable references (`$env`) parse as a `VariableReference`
+> wherever a number, a duration, a label name or a metric name goes.
 > Everything else is upstream's, and `NOTICE` lists the changes.
 >
 > Upstream lives inside the Prometheus monorepo, so it is tracked here on the

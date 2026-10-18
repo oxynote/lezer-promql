@@ -25,8 +25,12 @@ Changes from upstream:
 
   - src/promql.grammar: added the DynamicDurationPlaceholder token and
     accepted it as a number, so Grafana-style placeholders ($__interval,
-    $__range, $__rate_interval) parse as durations.
-  - test/expression.txt: parse cases for those placeholders.
+    $__range, $__rate_interval) parse as durations. Added the
+    VariableReference token and accepted it as a number, a duration, a
+    label name and a metric name.
+  - src/highlight.js: styled VariableReference as a special variable name.
+  - test/expression.txt: parse cases for those placeholders and
+    references.
   - jest.config.cjs: dropped the ts-jest preset, which upstream resolves
     through the prometheus web/ui workspace.
   - generate-types.sh: names both copyright holders in the header it emits

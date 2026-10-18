@@ -1,4 +1,5 @@
 // Copyright The Prometheus Authors
+// Modifications Copyright 2026 Oxynote
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +21,7 @@ export const promQLHighLight = styleTags({
     NumberDurationLiteral: tags.number,
     NumberDurationLiteralInDurationContext: tags.number,
     Identifier: tags.variableName,
+    VariableReference: tags.special(tags.variableName),
     'Abs Absent AbsentOverTime Acos Acosh Asin Asinh Atan Atanh AvgOverTime Ceil Changes Clamp ClampMax ClampMin Cos Cosh CountOverTime DaysInMonth DayOfMonth DayOfWeek DayOfYear Deg Delta Deriv EndFn Exp Floor HistogramAvg HistogramCount HistogramFraction HistogramQuantile HistogramSum DoubleExponentialSmoothing Hour Idelta Increase Irate LabelReplace LabelJoin LastOverTime Ln Log10 Log2 MaxOverTime MinOverTime Minute Month Pi PredictLinear PresentOverTime QuantileOverTime Rad Range Rate Resets Round Scalar Sgn Sin Sinh Sort SortDesc SortByLabel SortByLabelDesc Sqrt StartFn Step StddevOverTime StdvarOverTime SumOverTime Tan Tanh Time Timestamp Vector Year':
         tags.function(tags.variableName),
     'Avg Bottomk Count Count_values Group LimitK LimitRatio Max Min Quantile Stddev Stdvar Sum Topk': tags.operatorKeyword,
