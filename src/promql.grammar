@@ -335,8 +335,8 @@ durationPrimary[@inline] {
   whitespace { std.whitespace+ }
   LineComment { "#" ![\n]* }
 
-  // Grafana-style duration placeholders such as $__interval, $__range and
-  // $__rate_interval, which a dashboard substitutes before the query runs.
+  // duration placeholders such as $__interval, $__range and
+  // $__rate_interval, which the host substitutes before the query runs.
   // Accepted wherever a duration is, so an editor does not mark a valid
   // templated query as broken.
   DynamicDurationPlaceholder { "$__" $[a-zA-Z_]+ }

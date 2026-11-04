@@ -1,7 +1,7 @@
 {
   "name": "@oxynote/lezer-promql",
   "version": "0.314.0-oxynote.2",
-  "description": "lezer-based PromQL grammar, forked to parse Grafana-style duration placeholders and variable references",
+  "description": "lezer-based PromQL grammar, forked to parse duration placeholders (e.g., $__interval) and variable references (e.g., $env)",
   "main": "dist/index.cjs",
   "type": "module",
   "packageManager": "pnpm@11.1.3",

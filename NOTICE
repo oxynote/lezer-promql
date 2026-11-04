@@ -24,7 +24,7 @@ below is upstream's, under The Prometheus Authors' copyright above.
 Changes from upstream:
 
   - src/promql.grammar: added the DynamicDurationPlaceholder token and
-    accepted it as a number, so Grafana-style placeholders ($__interval,
+    accepted it as a number, so duration placeholders ($__interval,
     $__range, $__rate_interval) parse as durations. Added the
     VariableReference token and accepted it as a number, a duration, a
     label name and a metric name.
