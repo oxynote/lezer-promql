@@ -33,10 +33,11 @@ jobs:
     steps:
       - name: Check out the code
         uses: actions/checkout@v7
+        # the sync script lives only on main, and it writes the upstream
+        # branch through a worktree. So main is checked out, and the full
+        # history brings the upstream branch along.
         with:
-          ref: upstream
-          # the pull request is opened against main, so its history has to
-          # be here too.
+          ref: main
           fetch-depth: 0
 
       # sorted as text, v3.9.1 comes after v3.14.0 — the newest tag is only
@@ -57,9 +58,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          before="$(git rev-parse HEAD)"
+          git branch upstream origin/upstream
+          before="$(git rev-parse upstream)"
           ./sync-upstream.sh "${{ steps.tag.outputs.value }}"
-          after="$(git rev-parse HEAD)"
+          after="$(git rev-parse upstream)"
           if [[ "$before" == "$after" ]]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
