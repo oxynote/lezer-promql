@@ -15,6 +15,13 @@
 @top PromQL { expr }
 @top MetricName { Identifier }
 
+// MetricsQL, the VictoriaMetrics dialect, turned on with
+// parser.configure({ dialect: "metricsql" }). It only adds syntax, so
+// every PromQL query still parses with it on. Its tokens come from
+// src/metricsql.js and exist only while the dialect is on, which keeps
+// plain PromQL as strict as upstream.
+@dialects { metricsql }
+
 @precedence {
   group,
   pow @right,
@@ -22,7 +29,11 @@
   add @left,
   eql @left,
   and @left,
-  or @left
+  or @left,
+  ifop @left,
+  defaultop @left,
+  keepMetricNames @left,
+  with @left
 }
 
 expr[@isGroup=Expr] {
@@ -39,7 +50,10 @@ expr[@isGroup=Expr] {
   SubqueryExpr |
   UnaryExpr |
   VectorSelector |
-  StepInvariantExpr
+  StepInvariantExpr |
+  WithExpr |
+  KeepMetricNamesExpr |
+  TupleExpr
 }
 
 AnchoredExpr {
@@ -51,9 +65,9 @@ SmoothedExpr {
 }
 
 AggregateExpr {
-  AggregateOp AggregateModifier FunctionCallBody |
-  AggregateOp FunctionCallBody AggregateModifier |
-  AggregateOp FunctionCallBody
+  AggregateOp AggregateModifier FunctionCallBody LimitClause? |
+  AggregateOp FunctionCallBody AggregateModifier LimitClause? |
+  AggregateOp FunctionCallBody LimitClause?
 }
 
 AggregateOp {
@@ -70,7 +84,31 @@ AggregateOp {
   Stddev |
   Stdvar |
   Sum |
-  Topk
+  Topk |
+  Any |
+  BottomkAvg |
+  BottomkLast |
+  BottomkMax |
+  BottomkMedian |
+  BottomkMin |
+  Distinct |
+  Geomean |
+  Histogram |
+  Mad |
+  Median |
+  Mode |
+  OutliersIQR |
+  OutliersMAD |
+  OutliersK |
+  Quantiles |
+  Share |
+  Sum2 |
+  TopkAvg |
+  TopkLast |
+  TopkMax |
+  TopkMedian |
+  TopkMin |
+  Zscore
 }
 
 AggregateModifier {
@@ -96,12 +134,15 @@ BinaryExpr {
   expr !eql Neq    binModifiers expr |
   expr !and And    binModifiers expr |
   expr !and Unless binModifiers expr |
-  expr !or  Or     binModifiers expr
+  expr !or  Or     binModifiers expr |
+  expr !ifop If    binModifiers expr |
+  expr !ifop IfNot binModifiers expr |
+  expr !defaultop Default binModifiers expr
 }
 
 MatchingModifierClause {
   (Ignoring | On) GroupingLabels
-  ((GroupLeft | GroupRight) (!group GroupingLabels)?)?
+  ((GroupLeft | GroupRight) (!group (GroupingLabels | AllLabels))? PrefixClause?)?
 }
 
 FillClause {
@@ -131,11 +172,12 @@ binModifiers {
 }
 
 GroupingLabels {
-  "(" ((LabelName | QuotedLabelName | VariableReference) ("," (LabelName | QuotedLabelName | VariableReference))* ","?)? ")"
+  "(" (groupingLabel ("," groupingLabel)* ","?)? ")"
 }
 
 FunctionCall {
-  FunctionIdentifier FunctionCallBody
+  FunctionIdentifier FunctionCallBody |
+  CallIdentifier FunctionCallBody
 }
 
 FunctionIdentifier {
@@ -231,7 +273,7 @@ FunctionIdentifier {
 }
 
 FunctionCallBody {
-  "(" (expr ("," expr)*)? ")"
+  "(" (expr ("," expr)* trailingComma?)? ")"
 }
 
 ParenExpr {
@@ -244,11 +286,13 @@ OffsetExpr {
 
 MatrixSelector {
   // TODO: Can this not be more specific than "expr"?
-  expr "[" DurationExpr "]"
+  expr "[" DurationExpr "]" |
+  expr emptyRange
 }
 
 SubqueryExpr {
-  expr "[" DurationExpr ":" ("" | DurationExpr) "]"
+  expr "[" DurationExpr ":" ("" | DurationExpr) "]" |
+  expr stepOnlyWindow ("" | DurationExpr) "]"
 }
 
 UnaryExpr {
@@ -261,13 +305,18 @@ UnaryOp {
 }
 
 VectorSelector {
-  (Identifier | VariableReference) LabelMatchers |
+  (Identifier | ExtendedIdentifier | VariableReference) LabelMatchers |
   Identifier |
+  ExtendedIdentifier |
   LabelMatchers
 }
 
 LabelMatchers {
-  "{" ((UnquotedLabelMatcher | QuotedLabelMatcher | QuotedLabelName)("," (UnquotedLabelMatcher | QuotedLabelMatcher | QuotedLabelName))* ","?)? "}"
+  "{" (labelMatcher (("," | OrFilter) labelMatcher)* ","?)? "}"
+}
+
+labelMatcher[@inline] {
+  UnquotedLabelMatcher | QuotedLabelMatcher | QuotedLabelName | TemplateReference
 }
 
 MatchOp {
@@ -278,7 +327,7 @@ MatchOp {
 }
 
 UnquotedLabelMatcher {
-    (LabelName | VariableReference) MatchOp StringLiteral
+    (LabelName | ExtendedLabelName | VariableReference) MatchOp stringExpr
 }
 
 QuotedLabelMatcher {
@@ -290,7 +339,7 @@ QuotedLabelName {
 }
 
 StepInvariantExpr {
-  expr At ( NumberDurationLiteral | AtModifierPreprocessors "(" ")" )
+  expr At ( NumberDurationLiteral | AtModifierPreprocessors "(" ")" | AtExpr )
 }
 
 AtModifierPreprocessors {
@@ -298,11 +347,64 @@ AtModifierPreprocessors {
 }
 
 NumberDurationLiteral  {
- ("-"|"+")?~signed (number | inf | nan | VariableReference)
+ ("-"|"+")?~signed (number | metricsqlNumber | inf | nan | VariableReference)
 }
 
 NumberDurationLiteralInDurationContext {
-  number | inf | nan | VariableReference
+  number | metricsqlNumber | inf | nan | VariableReference | TemplateReference
+}
+
+// The MetricsQL rules. Their tokens exist only while the dialect is on, so
+// plain PromQL never reaches them.
+
+WithExpr {
+  With "(" (WithBinding ("," WithBinding)* ","?)? ")" !with expr
+}
+
+WithBinding {
+  (Identifier | ExtendedIdentifier) WithParams? EqlSingle expr
+}
+
+WithParams {
+  "(" (withParam ("," withParam)* ","?)? ")"
+}
+
+withParam[@inline] { Identifier | ExtendedIdentifier }
+
+KeepMetricNamesExpr {
+  expr !keepMetricNames KeepMetricNames
+}
+
+LimitClause {
+  Limit NumberDurationLiteral
+}
+
+PrefixClause {
+  Prefix stringExpr
+}
+
+// a tuple or an empty pair of parentheses, which WITH functions take as
+// arguments, as in f((a, b)).
+TupleExpr {
+  "(" expr tupleSeparator (expr (tupleSeparator expr)* tupleSeparator?)? ")" |
+  emptyParens
+}
+
+// the time after @ may be any expression, as in @ (end() - 1h).
+AtExpr {
+  atParen expr ")" |
+  CallIdentifier FunctionCallBody
+}
+
+// a string, or a WITH template that stands for one, joined with +.
+stringExpr {
+  stringPart (Concat stringPart)*
+}
+
+stringPart[@inline] { StringLiteral | TemplateReference }
+
+groupingLabel[@inline] {
+  LabelName | ExtendedLabelName | QuotedLabelName | VariableReference
 }
 
 DurationExpr {
@@ -328,6 +430,23 @@ durationPrimary[@inline] {
   DurationMaxOf "(" DurationExpr "," DurationExpr ")" |
   "(" DurationExpr ")" |
   NumberDurationLiteralInDurationContext
+}
+
+// MetricsQL's tokens. Declared before @tokens, so they are tried first.
+@external tokens metricsqlTokens from "./metricsql" {
+  metricsqlNumber,
+  ExtendedIdentifier,
+  ExtendedLabelName,
+  TemplateReference,
+  OrFilter,
+  AllLabels,
+  Concat,
+  emptyRange,
+  stepOnlyWindow,
+  emptyParens,
+  atParen,
+  tupleSeparator,
+  trailingComma
 }
 
 @skip { whitespace | LineComment }
@@ -441,7 +560,44 @@ durationPrimary[@inline] {
   FillRight
 }
 
+// MetricsQL's keywords, tried after the ones above.
+@external extend {Identifier} extendMetricsqlIdentifier from "./metricsql" {
+  Any,
+  BottomkAvg,
+  BottomkLast,
+  BottomkMax,
+  BottomkMedian,
+  BottomkMin,
+  Distinct,
+  Geomean,
+  Histogram,
+  Mad,
+  Median,
+  Mode,
+  OutliersIQR,
+  OutliersMAD,
+  OutliersK,
+  Quantiles,
+  Share,
+  Sum2,
+  TopkAvg,
+  TopkLast,
+  TopkMax,
+  TopkMedian,
+  TopkMin,
+  Zscore,
+  If,
+  IfNot,
+  Default,
+  With,
+  KeepMetricNames,
+  Limit,
+  Prefix,
+  CallIdentifier
+}
+
 @external propSource promQLHighLight from "./highlight"
+@external propSource metricsqlHighlight from "./metricsql-highlight"
 
   // FunctionIdentifier definitions
   Abs { condFn<"abs"> }

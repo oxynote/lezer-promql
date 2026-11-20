@@ -1,0 +1,487 @@
+# WITH template in a label filter {"dialect":"metricsql"}
+
+WITH (commonFilters = {job="api"}) rate(foo{commonFilters}[5m])
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,EqlSingle,VectorSelector(LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral)))),FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier,LabelMatchers(TemplateReference)),DurationExpr(NumberDurationLiteralInDurationContext))))))
+
+# WITH template next to other filters {"dialect":"metricsql"}
+
+WITH (f = {job="api"}) foo{f, env="prod"}
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,EqlSingle,VectorSelector(LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral)))),VectorSelector(Identifier,LabelMatchers(TemplateReference,UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral)))))
+
+# WITH function {"dialect":"metricsql"}
+
+WITH (f(x, y) = rate(x[5m]) + y) f(foo, 1)
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,WithParams(Identifier,Identifier),EqlSingle,BinaryExpr(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))),Add,VectorSelector(Identifier))),FunctionCall(CallIdentifier,FunctionCallBody(VectorSelector(Identifier),NumberDurationLiteral))))
+
+# WITH bindings with a trailing comma {"dialect":"metricsql"}
+
+WITH (a = 1, b = a * 2,) b
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,EqlSingle,NumberDurationLiteral),WithBinding(Identifier,EqlSingle,BinaryExpr(VectorSelector(Identifier),Mul,NumberDurationLiteral)),VectorSelector(Identifier)))
+
+# WITH binding the whole binary expression {"dialect":"metricsql"}
+
+WITH (a = 1) a + 2
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,EqlSingle,NumberDurationLiteral),BinaryExpr(VectorSelector(Identifier),Add,NumberDurationLiteral)))
+
+# Nested WITH {"dialect":"metricsql"}
+
+WITH (a = 1) (WITH (b = a) b)
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,EqlSingle,NumberDurationLiteral),ParenExpr(WithExpr(With,WithBinding(Identifier,EqlSingle,VectorSelector(Identifier)),VectorSelector(Identifier)))))
+
+# Variables inside WITH {"dialect":"metricsql"}
+
+WITH (w = {env="$env"}) rate(foo{w}[$__interval]) > $threshold
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,EqlSingle,VectorSelector(LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral)))),BinaryExpr(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier,LabelMatchers(TemplateReference)),DurationExpr(NumberDurationLiteralInDurationContext)))),Gtr,NumberDurationLiteral(VariableReference))))
+
+# MetricsQL-only function {"dialect":"metricsql"}
+
+median_over_time(foo[5m])
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))))
+
+# MetricsQL-only function with many arguments {"dialect":"metricsql"}
+
+label_set(time(), "a", "b")
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(FunctionCall(CallIdentifier,FunctionCallBody),StringLiteral,StringLiteral)))
+
+# PromQL function in the MetricsQL dialect {"dialect":"metricsql"}
+
+rate(foo[5m])
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))))
+
+# Rate without a window {"dialect":"metricsql"}
+
+rate(foo)
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(VectorSelector(Identifier))))
+
+# Empty window {"dialect":"metricsql"}
+
+rate(foo[])
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier)))))
+
+# MetricsQL aggregation with by after {"dialect":"metricsql"}
+
+median(foo) by (job)
+
+==>
+
+PromQL(AggregateExpr(AggregateOp(Median),FunctionCallBody(VectorSelector(Identifier)),AggregateModifier(By,GroupingLabels(LabelName))))
+
+# MetricsQL aggregation with by before {"dialect":"metricsql"}
+
+median by (job) (foo)
+
+==>
+
+PromQL(AggregateExpr(AggregateOp(Median),AggregateModifier(By,GroupingLabels(LabelName)),FunctionCallBody(VectorSelector(Identifier))))
+
+# MetricsQL aggregation with a parameter {"dialect":"metricsql"}
+
+outliersk(3, foo)
+
+==>
+
+PromQL(AggregateExpr(AggregateOp(OutliersK),FunctionCallBody(NumberDurationLiteral,VectorSelector(Identifier))))
+
+# Aggregation limit {"dialect":"metricsql"}
+
+sum(foo) by (job) limit 5
+
+==>
+
+PromQL(AggregateExpr(AggregateOp(Sum),FunctionCallBody(VectorSelector(Identifier)),AggregateModifier(By,GroupingLabels(LabelName)),LimitClause(Limit,NumberDurationLiteral)))
+
+# Aggregation limit without a modifier {"dialect":"metricsql"}
+
+topk_max(3, foo) limit 10
+
+==>
+
+PromQL(AggregateExpr(AggregateOp(TopkMax),FunctionCallBody(NumberDurationLiteral,VectorSelector(Identifier)),LimitClause(Limit,NumberDurationLiteral)))
+
+# keep_metric_names after a function {"dialect":"metricsql"}
+
+rate(foo[5m]) keep_metric_names
+
+==>
+
+PromQL(KeepMetricNamesExpr(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))),KeepMetricNames))
+
+# keep_metric_names after a binary expression {"dialect":"metricsql"}
+
+foo + bar keep_metric_names
+
+==>
+
+PromQL(KeepMetricNamesExpr(BinaryExpr(VectorSelector(Identifier),Add,VectorSelector(Identifier)),KeepMetricNames))
+
+# if operator {"dialect":"metricsql"}
+
+foo if bar
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),If,VectorSelector(Identifier)))
+
+# ifnot operator {"dialect":"metricsql"}
+
+foo ifnot bar
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),IfNot,VectorSelector(Identifier)))
+
+# default operator {"dialect":"metricsql"}
+
+foo default 0
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Default,NumberDurationLiteral))
+
+# default binds looser than or {"dialect":"metricsql"}
+
+foo or bar default 0
+
+==>
+
+PromQL(BinaryExpr(BinaryExpr(VectorSelector(Identifier),Or,VectorSelector(Identifier)),Default,NumberDurationLiteral))
+
+# Prefix after group_left {"dialect":"metricsql"}
+
+foo * on(a) group_left(b) prefix "x_" bar
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Mul,MatchingModifierClause(On,GroupingLabels(LabelName),GroupLeft,GroupingLabels(LabelName),PrefixClause(Prefix,StringLiteral)),VectorSelector(Identifier)))
+
+# or between label filters {"dialect":"metricsql"}
+
+foo{a="b" or c="d", e="f"}
+
+==>
+
+PromQL(VectorSelector(Identifier,LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral),OrFilter,UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral),UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral))))
+
+# Dotted metric name {"dialect":"metricsql"}
+
+foo.bar.baz
+
+==>
+
+PromQL(VectorSelector(ExtendedIdentifier))
+
+# Dotted metric name with filters {"dialect":"metricsql"}
+
+foo.bar{a="b"}
+
+==>
+
+PromQL(VectorSelector(ExtendedIdentifier,LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral))))
+
+# Fractional duration {"dialect":"metricsql"}
+
+rate(foo[1.5m])
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))))
+
+# Step duration {"dialect":"metricsql"}
+
+rate(foo[5i])
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))))
+
+# Mixed duration {"dialect":"metricsql"}
+
+foo offset 1h1.5m
+
+==>
+
+PromQL(OffsetExpr(VectorSelector(Identifier),Offset,OffsetDurationExpr(NumberDurationLiteralInDurationContext)))
+
+# Fractional offset {"dialect":"metricsql"}
+
+foo offset 1.5h
+
+==>
+
+PromQL(OffsetExpr(VectorSelector(Identifier),Offset,OffsetDurationExpr(NumberDurationLiteralInDurationContext)))
+
+# Number with a unit suffix {"dialect":"metricsql"}
+
+foo > 1Ki
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Gtr,NumberDurationLiteral))
+
+# Number with a byte suffix {"dialect":"metricsql"}
+
+foo > 2MiB
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Gtr,NumberDurationLiteral))
+
+# Label named or {"dialect":"metricsql"}
+
+foo{or="x"}
+
+==>
+
+PromQL(VectorSelector(Identifier,LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral))))
+
+# Metric named like a MetricsQL aggregation {"dialect":"metricsql"}
+
+median
+
+==>
+
+PromQL(VectorSelector(Identifier))
+
+# Metric name with letters beyond ASCII {"dialect":"metricsql"}
+
+温度{房间="水电费"}
+
+==>
+
+PromQL(VectorSelector(ExtendedIdentifier,LabelMatchers(UnquotedLabelMatcher(ExtendedLabelName,MatchOp(EqlSingle),StringLiteral))))
+
+# Escaped metric name {"dialect":"metricsql"}
+
+foo\-bar
+
+==>
+
+PromQL(VectorSelector(ExtendedIdentifier))
+
+# Dotted label name {"dialect":"metricsql"}
+
+foo{label.name="x"}
+
+==>
+
+PromQL(VectorSelector(Identifier,LabelMatchers(UnquotedLabelMatcher(ExtendedLabelName,MatchOp(EqlSingle),StringLiteral))))
+
+# Dotted grouping label {"dialect":"metricsql"}
+
+sum(foo) by (label.name)
+
+==>
+
+PromQL(AggregateExpr(AggregateOp(Sum),FunctionCallBody(VectorSelector(Identifier)),AggregateModifier(By,GroupingLabels(ExtendedLabelName))))
+
+# Escaped function name {"dialect":"metricsql"}
+
+r\a\te(foo[5m])
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))))
+
+# Reserved word as a metric name {"dialect":"metricsql"}
+
+a + (on)
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Add,ParenExpr(VectorSelector(ExtendedIdentifier))))
+
+# Joined label value {"dialect":"metricsql"}
+
+foo{a="x" + "y"}
+
+==>
+
+PromQL(VectorSelector(Identifier,LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),StringLiteral,Concat,StringLiteral))))
+
+# WITH template as a label value {"dialect":"metricsql"}
+
+WITH (j = "api") foo{job=j}
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,EqlSingle,StringLiteral),VectorSelector(Identifier,LabelMatchers(UnquotedLabelMatcher(LabelName,MatchOp(EqlSingle),TemplateReference)))))
+
+# WITH template as a window and an offset {"dialect":"metricsql"}
+
+WITH (w = 5m) rate(foo[w]) offset w
+
+==>
+
+PromQL(OffsetExpr(WithExpr(With,WithBinding(Identifier,EqlSingle,NumberDurationLiteral),FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext(TemplateReference)))))),Offset,OffsetDurationExpr(NumberDurationLiteralInDurationContext(TemplateReference))))
+
+# WITH template in a subquery {"dialect":"metricsql"}
+
+WITH (w = 5m) foo[w:w]
+
+==>
+
+PromQL(SubqueryExpr(WithExpr(With,WithBinding(Identifier,EqlSingle,NumberDurationLiteral),VectorSelector(Identifier)),DurationExpr(NumberDurationLiteralInDurationContext(TemplateReference)),DurationExpr(NumberDurationLiteralInDurationContext(TemplateReference))))
+
+# Subquery without a window {"dialect":"metricsql"}
+
+foo[:5m]
+
+==>
+
+PromQL(SubqueryExpr(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))
+
+# Subquery inheriting the step {"dialect":"metricsql"}
+
+foo[:]
+
+==>
+
+PromQL(SubqueryExpr(VectorSelector(Identifier)))
+
+# Expression after @ {"dialect":"metricsql"}
+
+foo @ (end() - 1h)
+
+==>
+
+PromQL(StepInvariantExpr(VectorSelector(Identifier),At,AtExpr(BinaryExpr(FunctionCall(FunctionIdentifier(EndFn),FunctionCallBody),Sub,NumberDurationLiteral))))
+
+# Function call after @ {"dialect":"metricsql"}
+
+foo @ time()
+
+==>
+
+PromQL(StepInvariantExpr(VectorSelector(Identifier),At,AtExpr(CallIdentifier,FunctionCallBody)))
+
+# group_left with all labels {"dialect":"metricsql"}
+
+a * on(x) group_left(*) b
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Mul,MatchingModifierClause(On,GroupingLabels(LabelName),GroupLeft,AllLabels),VectorSelector(Identifier)))
+
+# Empty label list after group_left {"dialect":"metricsql"}
+
+a * on(x) group_left() b
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Mul,MatchingModifierClause(On,GroupingLabels(LabelName),GroupLeft,GroupingLabels),VectorSelector(Identifier)))
+
+# Prefix built from a WITH template {"dialect":"metricsql"}
+
+WITH (p = "x_") a * on(x) group_left prefix p + "y" b
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,EqlSingle,StringLiteral),BinaryExpr(VectorSelector(Identifier),Mul,MatchingModifierClause(On,GroupingLabels(LabelName),GroupLeft,PrefixClause(Prefix,TemplateReference,Concat,StringLiteral)),VectorSelector(Identifier))))
+
+# Plus after a prefix that starts the right side {"dialect":"metricsql"}
+
+a * on(x) group_left prefix "p" + rate(b)
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Mul,MatchingModifierClause(On,GroupingLabels(LabelName),GroupLeft,PrefixClause(Prefix,StringLiteral)),UnaryExpr(UnaryOp,FunctionCall(CallIdentifier,FunctionCallBody(VectorSelector(Identifier))))))
+
+# Tuple argument {"dialect":"metricsql"}
+
+WITH (f(x) = sum(foo) by (x)) f((a, b))
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,WithParams(Identifier),EqlSingle,AggregateExpr(AggregateOp(Sum),FunctionCallBody(VectorSelector(Identifier)),AggregateModifier(By,GroupingLabels(LabelName)))),FunctionCall(CallIdentifier,FunctionCallBody(TupleExpr(VectorSelector(Identifier),VectorSelector(Identifier))))))
+
+# Empty parentheses argument {"dialect":"metricsql"}
+
+WITH (f(x, y) = x) f(foo, ())
+
+==>
+
+PromQL(WithExpr(With,WithBinding(Identifier,WithParams(Identifier,Identifier),EqlSingle,VectorSelector(Identifier)),FunctionCall(CallIdentifier,FunctionCallBody(VectorSelector(Identifier),TupleExpr))))
+
+# Trailing comma in arguments {"dialect":"metricsql"}
+
+label_set(foo, "a", "b",)
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(VectorSelector(Identifier),StringLiteral,StringLiteral)))
+
+# Duration units in any case {"dialect":"metricsql"}
+
+rate(foo[1H30m5S])
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))))
+
+# Duration parts in any order {"dialect":"metricsql"}
+
+rate(foo[30m1h])
+
+==>
+
+PromQL(FunctionCall(CallIdentifier,FunctionCallBody(MatrixSelector(VectorSelector(Identifier),DurationExpr(NumberDurationLiteralInDurationContext)))))
+
+# Size suffixes in any case {"dialect":"metricsql"}
+
+foo > 1kib + 2MB + 45mi
+
+==>
+
+PromQL(BinaryExpr(VectorSelector(Identifier),Gtr,BinaryExpr(BinaryExpr(NumberDurationLiteral,Add,NumberDurationLiteral),Add,NumberDurationLiteral)))
+
+# Integer prefixes {"dialect":"metricsql"}
+
+0X1F + 0b101 + 0o17
+
+==>
+
+PromQL(BinaryExpr(BinaryExpr(NumberDurationLiteral,Add,NumberDurationLiteral),Add,NumberDurationLiteral))
+
+# Trailing dot and exponent {"dialect":"metricsql"}
+
+123. + 12.e+4
+
+==>
+
+PromQL(BinaryExpr(NumberDurationLiteral,Add,NumberDurationLiteral))

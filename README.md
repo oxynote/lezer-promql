@@ -5,8 +5,12 @@
 > published as `@oxynote/lezer-promql`. It adds two things, so an editor
 > does not mark a templated query as broken: duration placeholders
 > (`$__interval`, `$__range`, `$__rate_interval`) parse as durations, and variable references (`$env`) parse as a `VariableReference`
-> wherever a number, a duration, a label name or a metric name goes.
+> wherever a number, a duration, a label name or a metric name goes. It
+> also carries a `metricsql` dialect for VictoriaMetrics' MetricsQL.
 > Everything else is upstream's, and `NOTICE` lists the changes.
+>
+> [Oxynote](https://github.com/oxynote/oxynote) uses this package for its
+> PromQL and MetricsQL query editors.
 >
 > Upstream lives inside the Prometheus monorepo, so it is tracked here on the
 > `upstream` branch — the module's directory at a pinned release tag, and
@@ -42,7 +46,7 @@ add an override rather than an import alias:
 ```json
 "pnpm": {
   "overrides": {
-    "@prometheus-io/lezer-promql": "npm:@oxynote/lezer-promql@0.314.0-oxynote.1"
+    "@prometheus-io/lezer-promql": "npm:@oxynote/lezer-promql@0.316.0-oxynote.1"
   }
 }
 ```
@@ -52,6 +56,34 @@ add an override rather than an import alias:
 ```bash
 npm install --save @lezer/lr @lezer/highlight
 ```
+
+## MetricsQL
+
+The `metricsql` dialect parses MetricsQL, the query language of
+VictoriaMetrics. Turn it on by configuring the parser:
+
+```js
+import { parser } from "@oxynote/lezer-promql";
+
+const metricsql = parser.configure({ dialect: "metricsql" });
+```
+
+Without the dialect the parser is plain PromQL and stays as strict as
+upstream, so MetricsQL syntax such as `WITH (f = {job="api"}) rate(foo{f})`
+parses with errors. With it, every PromQL query still parses, and so does
+every query the official MetricsQL parser accepts in its own tests. The
+test suite checks both.
+
+The dialect checks syntax only. It does not know which functions exist, how
+many arguments a `WITH` function takes, or whether a regular expression
+compiles.
+
+The dialect's tokens and styles are in `src/metricsql.js` and
+`src/metricsql-highlight.js`. In `src/promql.grammar` it has its own rules
+and a few alternatives in upstream's rules, but it leaves upstream's
+`@tokens` block, `src/tokens.js` and `src/highlight.js` alone. So a sync
+with upstream conflicts with it only where upstream changes one of those
+rules.
 
 ## Development
 
@@ -64,7 +96,15 @@ npm install --save @lezer/lr @lezer/highlight
 
     pnpm run test
 
+`test/metricsql-official.json` holds the queries the official MetricsQL
+parser accepts in its tests. To refresh it from a newer
+[metricsql](https://github.com/VictoriaMetrics/metricsql) release:
+
+    node sync-metricsql-tests.mjs v0.87.6
+
 ## License
 
 The code is licensed under an [Apache 2.0](LICENSE) license, as upstream is.
-`NOTICE` carries Prometheus's attribution and the list of changes made here.
+`NOTICE` carries Prometheus's attribution, VictoriaMetrics' attribution for
+the MetricsQL lexer rules and test queries, and the list of changes made
+here.

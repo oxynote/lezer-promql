@@ -28,9 +28,19 @@ Changes from upstream:
     $__range, $__rate_interval) parse as durations. Added the
     VariableReference token and accepted it as a number, a duration, a
     label name and a metric name.
+    Added the metricsql dialect, which parses MetricsQL, the
+    VictoriaMetrics query language: its rules, and alternatives in
+    upstream's rules that only the dialect's tokens can reach.
+  - src/metricsql.js, src/metricsql-highlight.js: new files with the
+    metricsql dialect's tokens and highlighting.
   - src/highlight.js: styled VariableReference as a special variable name.
   - test/expression.txt: parse cases for those placeholders and
     references.
+  - test/metricsql.txt, test/metricsql-official.json, test/promql.test.js:
+    parse cases for the metricsql dialect, checks that PromQL still
+    rejects them, that every PromQL case still parses with the dialect on,
+    and highlighting checks. sync-metricsql-tests.mjs is an addition that
+    refreshes test/metricsql-official.json.
   - jest.config.cjs: dropped the ts-jest preset, which upstream resolves
     through the prometheus web/ui workspace.
   - generate-types.sh: names both copyright holders in the header it emits
@@ -43,3 +53,15 @@ Changes from upstream:
   - README.md: describes the fork; SYNCING.md, sync-upstream.sh and
     .github/ are additions and contain no upstream code.
 
+---
+
+MetricsQL
+Copyright 2019-2020 VictoriaMetrics, Inc.
+
+The metricsql dialect was written for this package. Its rules for numbers,
+durations and names in src/metricsql.js follow the lexer of
+https://github.com/VictoriaMetrics/metricsql, and
+test/metricsql-official.json holds the queries from that project's
+parser_test.go. Both are distributed under the Apache License, Version
+2.0. The constructs the dialect covers also follow the MetricsQL
+documentation at https://docs.victoriametrics.com/victoriametrics/metricsql/.
