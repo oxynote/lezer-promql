@@ -43,7 +43,10 @@ git checkout main && git merge upstream
 ## After a sync
 
 - `pnpm run build && pnpm test` — the parse tests are the specification, and
-  the placeholder cases at the end of `test/expression.txt` are this fork's.
+  the placeholder cases at the end of `test/expression.txt` are this fork's,
+  as is all of `test/metricsql.txt`. Upstream can add a keyword that
+  MetricsQL also uses, and then the two tables in `src/tokens.js` must not
+  both claim it.
 - Bump `version` in `package.json` to the new upstream version with the
   `-oxynote.N` suffix reset to 1, then tag `vX.Y.Z-oxynote.N` to publish.
   The tag is checked against the manifest before anything is published, and

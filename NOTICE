@@ -28,9 +28,28 @@ Changes from upstream:
     $__range, $__rate_interval) parse as durations. Added the
     VariableReference token and accepted it as a number, a duration, a
     label name and a metric name.
-  - src/highlight.js: styled VariableReference as a special variable name.
+    Added the metricsql dialect, which parses MetricsQL, the
+    VictoriaMetrics query language: WITH templates, any-name function
+    calls, the MetricsQL aggregations, limit, keep_metric_names, prefix,
+    the if, ifnot and default operators, or between label filters, dotted
+    metric names, empty windows, and MetricsQL numbers and durations.
+  - src/tokens.js: added the MetricsQL keywords, aggregations, function
+    names and label filter extras, which exist only while the metricsql
+    dialect is on.
+  - src/highlight.js: styled VariableReference as a special variable name,
+    and styled the MetricsQL nodes like their PromQL counterparts.
   - test/expression.txt: parse cases for those placeholders and
     references.
+  - test/metricsql.txt, test/promql.test.js: parse cases for the metricsql
+    dialect, checks that PromQL still rejects them, and highlighting
+    checks.
+
+The metricsql dialect was written for this package. The constructs it
+covers follow the MetricsQL documentation at
+https://docs.victoriametrics.com/victoriametrics/metricsql/ and the
+@cloudcare/lezer-metricsql grammar (Copyright (c) 2025 CloudCare, published
+to npm under the MIT License, while its package.json declares Apache-2.0).
+That grammar served as a reference only. No code is copied from it.
   - jest.config.cjs: dropped the ts-jest preset, which upstream resolves
     through the prometheus web/ui workspace.
   - generate-types.sh: names both copyright holders in the header it emits

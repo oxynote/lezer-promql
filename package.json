@@ -1,7 +1,7 @@
 {
   "name": "@oxynote/lezer-promql",
-  "version": "0.314.0-oxynote.3",
-  "description": "lezer-based PromQL grammar, forked to parse duration placeholders (e.g., $__interval) and variable references (e.g., $env)",
+  "version": "0.314.0-oxynote.4",
+  "description": "lezer-based PromQL grammar, forked to parse duration placeholders (e.g., $__interval) and variable references (e.g., $env), with a MetricsQL dialect",
   "main": "dist/index.cjs",
   "type": "module",
   "packageManager": "pnpm@11.1.3",
@@ -28,7 +28,8 @@
   ],
   "keywords": [
     "lezer",
-    "promql"
+    "promql",
+    "metricsql"
   ],
   "bugs": {
     "url": "https://github.com/oxynote/lezer-promql/issues"
